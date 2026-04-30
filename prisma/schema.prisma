@@ -1,0 +1,307 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USER & AUTH ───
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  emailVerified     DateTime?
+  passwordHash      String?
+  image             String?   // Avatar URL (hochgeladen oder Emoji-Code)
+  rolle             Rolle     @default(MITGLIED)
+  gesperrt          Boolean   @default(false)
+  pushToken         String?
+  benachrichtigungen Json     @default("{\"kommentare\":true,\"prost\":true,\"rezepte\":true,\"wiki\":true,\"admin\":true}")
+  eingeladenVon     String?
+  einlader          User?     @relation("Einladungen", fields: [eingeladenVon], references: [id])
+  eingeladene       User[]    @relation("Einladungen")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  accounts          Account[]
+  sessions          Session[]
+  bewertungen       Bewertung[]
+  kommentare        Kommentar[]
+  rezepte           Rezept[]
+  wikiArtikel       WikiArtikel[]
+  wikiVersionen     WikiVersion[]
+  dateien           Datei[]
+  prost             Prost[]
+  einladungen       Einladung[]   @relation("EinladungErsteller")
+  benachrichtigungenEmpfangen Benachrichtigung[] @relation("Empfaenger")
+
+  @@map("users")
+}
+
+enum Rolle {
+  ADMIN
+  MITGLIED
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── EINLADUNGEN ───
+
+model Einladung {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  erstelltVon       String
+  ersteller         User      @relation("EinladungErsteller", fields: [erstelltVon], references: [id])
+  maxNutzungen      Int       @default(1)
+  aktuelleNutzungen Int       @default(0)
+  gueltigBis        DateTime?
+  aktiv             Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+
+  @@map("einladungen")
+}
+
+// ─── BIER-DATENBANK (gecrawlte Daten) ───
+
+model BierDatenbank {
+  id                String  @id @default(cuid())
+  name              String
+  brauerei          String?
+  brauereiAdresse   String?
+  land              String?
+  herkunft          String?
+  ean               String? @unique
+  artikelnummer     String?
+  bierstil          String?
+  biersorte         String?
+  brauart           String?
+  alkoholProzent    Float?
+  inhaltMl          Int?
+  zutaten           String? @db.Text
+  optik             String?
+  farbe             String?
+  geruch            String?
+  geschmack         String?
+  ibu               String?
+  stammwuerze       String?
+  trinktemperatur   String?
+  glastyp           String?
+  foodPairing       String?
+  preis             Float?
+  pfand             String?
+  beschreibung      String? @db.Text
+  geschmackBeschreibung String? @db.Text
+  aussehen          String? @db.Text
+  geschichte        String? @db.Text
+  trinktemperaturInfo String? @db.Text
+  beschreibungKomplett String? @db.Text
+  bildUrl           String?
+  bildLokal         String?
+  detailUrl         String?
+  createdAt         DateTime @default(now())
+
+  // Verknüpft mit User-Bewertungen
+  bewertungen       Bewertung[]
+
+  @@map("bier_datenbank")
+}
+
+// ─── BEWERTUNGEN ───
+
+model Bewertung {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bierDbId        String?
+  bierDb          BierDatenbank? @relation(fields: [bierDbId], references: [id])
+
+  // Bier-Daten (manuell oder aus DB)
+  name            String
+  brauerei        String?
+  sorte           String?
+  ean             String?
+  bildUrls        String[]  @default([])
+
+  // Bewertung
+  sterne          Int
+  geschmack       String[]  @default([])
+  mundgefuehl     String?
+  kohlensaeure    String?
+  farbe           String?
+  preis           String?
+  nochmal         String?
+  notizen         String?   @db.Text
+
+  prostCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  kommentare      Kommentar[]
+  prost           Prost[]
+
+  @@map("bewertungen")
+}
+
+// ─── KOMMENTARE ───
+
+model Kommentar {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bewertungId   String?
+  bewertung     Bewertung? @relation(fields: [bewertungId], references: [id], onDelete: Cascade)
+  rezeptId      String?
+  rezept        Rezept?   @relation(fields: [rezeptId], references: [id], onDelete: Cascade)
+  text          String    @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@map("kommentare")
+}
+
+// ─── PROST (LIKES) ───
+
+model Prost {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bewertungId String
+  bewertung   Bewertung @relation(fields: [bewertungId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, bewertungId])
+  @@map("prost")
+}
+
+// ─── REZEPTE ───
+
+model Rezept {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titel         String
+  zielSorte     String?
+  schwierigkeit String?
+  brauzeit      Float?
+  basisMengeL   Float?    @default(20)
+  zutaten       Json      @default("[]")
+  schritte      Json      @default("[]")
+  bildUrls      String[]  @default([])
+  notizen       String?   @db.Text
+  bewertung     Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  kommentare    Kommentar[]
+
+  @@map("rezepte")
+}
+
+// ─── WIKI ───
+
+model WikiArtikel {
+  id                String    @id @default(cuid())
+  slug              String    @unique
+  titel             String
+  inhalt            String    @db.Text
+  kategorie         String?
+  tags              String[]  @default([])
+  erstelltVon       String
+  autor             User      @relation(fields: [erstelltVon], references: [id])
+  zuletzt           String?
+  geschuetzt        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  versionen         WikiVersion[]
+
+  @@map("wiki_artikel")
+}
+
+model WikiVersion {
+  id              String      @id @default(cuid())
+  artikelId       String
+  artikel         WikiArtikel @relation(fields: [artikelId], references: [id], onDelete: Cascade)
+  inhalt          String      @db.Text
+  bearbeitetVon   String
+  bearbeiter      User        @relation(fields: [bearbeitetVon], references: [id])
+  aenderungsnotiz String?
+  createdAt       DateTime    @default(now())
+
+  @@map("wiki_versionen")
+}
+
+// ─── DATEIEN ───
+
+model Datei {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateiname   String
+  dateipfad   String
+  dateityp    String
+  groesse     Int
+  tags        String[]  @default([])
+  ordner      String?
+  createdAt   DateTime  @default(now())
+
+  @@map("dateien")
+}
+
+// ─── BENACHRICHTIGUNGEN ───
+
+model Benachrichtigung {
+  id            String    @id @default(cuid())
+  empfaengerId  String
+  empfaenger    User      @relation("Empfaenger", fields: [empfaengerId], references: [id], onDelete: Cascade)
+  typ           String    // kommentar | prost | rezept | wiki | admin
+  titel         String
+  text          String
+  link          String?
+  gelesen       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@map("benachrichtigungen")
+}
