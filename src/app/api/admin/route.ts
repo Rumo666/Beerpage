@@ -8,7 +8,7 @@ import { randomBytes } from "crypto";
 async function requireAdmin(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
-  if (session.user.rolle !== "ADMIN") return null;
+  if (session?.user?.rolle !== "ADMIN") return null;
   return session;
 }
 
