@@ -245,7 +245,7 @@ export default function NeuesBierPage() {
                         <div style={{ position: "absolute" as const, top: "100%", left: 0, right: 0, background: C.card, border: `1px solid ${C.bd}`, borderRadius: 10, zIndex: 100, maxHeight: 200, overflowY: "auto" as const }}>
                             {suggestions.slice(0, 8).map((b: any) => (
                                 <div key={b.id} onClick={() => selectFromDb(b)} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.bd}`, display: "flex", alignItems: "center", gap: 10 }}
-                                     onMouseEnter={e => (e.currentTarget.style.background = C.bgHover || "#231F16")}
+                                     onMouseEnter={e => (e.currentTarget.style.background = "#231F16")}
                                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                                     {b.bildUrl && <img src={b.bildUrl} style={{ width: 32, height: 32, objectFit: "cover" as const, borderRadius: 4 }} alt="" />}
                                     <div>
