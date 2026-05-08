@@ -21,11 +21,11 @@ ACCOUNT_ID = "f15e71b9b1d5c21a105354072e013c50"
 ACCESS_KEY_ID = "f2ab34351f8abaaf12223c777f1a1f19"
 SECRET_ACCESS_KEY = "HIER_DEINEN_SECRET_KEY_EINTRAGEN"  # ← eintragen!
 BUCKET_NAME = "bierbuddy-bilder"
-PUBLIC_URL = f"https://pub-{ACCOUNT_ID}.r2.dev"  # Wird später angepasst
+PUBLIC_URL = f"https://pub-3f5b3941ab674fc1b02c9beb720d70de.r2.dev"  # Wird später angepasst
 
 # Pfade
 BILDER_ORDNER = r"C:\Users\msomm\PyCharmMiscProject\bilder"
-JSON_DATEI = "biere_datenbank.json"
+JSON_DATEI = "C:\Users\hypoc\WebstormProjects\Beerpage"
 JSON_OUTPUT = "biere_datenbank_r2.json"  # Aktualisierte Version
 
 # ─── R2 CLIENT ───
