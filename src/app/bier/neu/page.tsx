@@ -34,23 +34,10 @@ function SL({ children }: { children: React.ReactNode }) {
     return <div style={{ fontSize: 11, fontWeight: 700, color: C.txD, textTransform: "uppercase" as const, letterSpacing: 1.5, marginBottom: 8, marginTop: 20 }}>{children}</div>;
 }
 
-function Input({ label, placeholder, value, onChange, type = "text" }: any) {
-    return (
-        <div style={{ marginBottom: 14 }}>
-            {label && <SL>{label}</SL>}
-            <input type={type} placeholder={placeholder} value={value} onChange={onChange} style={{
-                width: "100%", padding: "11px 14px", background: C.input, border: `1px solid ${C.bd}`,
-                borderRadius: 10, color: C.tx, fontSize: 14, outline: "none", boxSizing: "border-box" as const,
-            }} />
-        </div>
-    );
-}
-
 export default function NeuesBierPage() {
     const { status } = useSession();
     const router = useRouter();
 
-    // Formular-State
     const [name, setName] = useState("");
     const [brauerei, setBrauerei] = useState("");
     const [sorte, setSorte] = useState("");
@@ -65,8 +52,8 @@ export default function NeuesBierPage() {
     const [preis, setPreis] = useState("");
     const [nochmal, setNochmal] = useState("");
     const [bierDbId, setBierDbId] = useState("");
+    const [bildUrls, setBildUrls] = useState<string[]>([]);
 
-    // UI-State
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
@@ -80,7 +67,6 @@ export default function NeuesBierPage() {
         if (status === "unauthenticated") router.push("/login");
     }, [status, router]);
 
-    // Autocomplete bei Namenseingabe
     const handleNameChange = (val: string) => {
         setName(val);
         clearTimeout(suggestTimer.current);
@@ -95,14 +81,18 @@ export default function NeuesBierPage() {
         }, 300);
     };
 
-    // Bier aus DB auswählen → Felder vorausfüllen
     const selectFromDb = (bier: any) => {
         setName(bier.name || "");
         setBrauerei(bier.brauerei || bier.brauerei_detail || "");
         setSorte(bier.biersorte || bier.bierstil || "");
         setEan(bier.ean || "");
         setBierDbId(bier.id || "");
-        // Geschmack aus DB vorausfüllen
+
+        // Bild aus DB übernehmen
+        if (bier.bildUrl) {
+            setBildUrls([bier.bildUrl]);
+        }
+
         if (bier.geschmack) {
             const dbGeschmack = bier.geschmack.split(",").map((g: string) => g.trim());
             const matched = dbGeschmack.filter((g: string) =>
@@ -120,7 +110,6 @@ export default function NeuesBierPage() {
         setEanResult({ bier, quelle: "lokal" });
     };
 
-    // EAN Lookup
     const lookupEan = async (eanVal: string) => {
         if (!eanVal || eanVal.length < 8) return;
         setEanLoading(true);
@@ -153,6 +142,7 @@ export default function NeuesBierPage() {
                     mundgefuehl: mund,
                     kohlensaeure: co2,
                     farbe, preis, nochmal,
+                    bildUrls,
                     bierDbId: bierDbId || undefined,
                 }),
             });
@@ -170,7 +160,7 @@ export default function NeuesBierPage() {
     };
 
     if (success) return (
-        <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" as const, gap: 16 }}>
             <div style={{ fontSize: 64 }}>🍺</div>
             <div style={{ color: C.ac, fontSize: 20, fontWeight: 700, fontFamily: "Georgia, serif" }}>Bewertung gespeichert!</div>
             <div style={{ color: C.txD, fontSize: 13 }}>Weiterleitung zum Feed…</div>
@@ -205,8 +195,6 @@ export default function NeuesBierPage() {
                             {eanLoading ? "⏳" : "🔍 Suchen"}
                         </button>
                     </div>
-
-                    {/* EAN Ergebnis */}
                     {eanResult && (
                         <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: eanResult.bier ? "#27AE6020" : "#C0392B20", border: `1px solid ${eanResult.bier ? "#27AE60" : C.danger}`, textAlign: "left" as const }}>
                             {eanResult.bier ? (
@@ -229,6 +217,24 @@ export default function NeuesBierPage() {
                     )}
                 </div>
 
+                {/* Bilder Vorschau */}
+                {bildUrls.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                        <SL>Bild</SL>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
+                            {bildUrls.map((url, i) => (
+                                <div key={i} style={{ position: "relative" as const, width: 80, height: 80 }}>
+                                    <img src={url} alt="" style={{ width: 80, height: 80, objectFit: "cover" as const, borderRadius: 10, border: `1px solid ${C.bd}` }} />
+                                    <button type="button" onClick={() => setBildUrls(prev => prev.filter((_, idx) => idx !== i))}
+                                            style={{ position: "absolute" as const, top: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: C.danger, border: `2px solid ${C.bg}`, color: "#fff", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Biername mit Autocomplete */}
                 <div style={{ marginBottom: 14, position: "relative" as const }}>
                     <SL>Biername *</SL>
@@ -240,17 +246,17 @@ export default function NeuesBierPage() {
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                         style={{ width: "100%", padding: "11px 14px", background: C.input, border: `1px solid ${C.bd}`, borderRadius: 10, color: C.tx, fontSize: 14, outline: "none", boxSizing: "border-box" as const }}
                     />
-                    {/* Autocomplete Dropdown */}
                     {showSuggestions && suggestions.length > 0 && (
-                        <div style={{ position: "absolute" as const, top: "100%", left: 0, right: 0, background: C.card, border: `1px solid ${C.bd}`, borderRadius: 10, zIndex: 100, maxHeight: 200, overflowY: "auto" as const }}>
+                        <div style={{ position: "absolute" as const, top: "100%", left: 0, right: 0, background: C.card, border: `1px solid ${C.bd}`, borderRadius: 10, zIndex: 100, maxHeight: 220, overflowY: "auto" as const, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
                             {suggestions.slice(0, 8).map((b: any) => (
-                                <div key={b.id} onClick={() => selectFromDb(b)} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.bd}`, display: "flex", alignItems: "center", gap: 10 }}
+                                <div key={b.id} onClick={() => selectFromDb(b)}
+                                     style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.bd}`, display: "flex", alignItems: "center", gap: 10 }}
                                      onMouseEnter={e => (e.currentTarget.style.background = "#231F16")}
                                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                                    {b.bildUrl && <img src={b.bildUrl} style={{ width: 32, height: 32, objectFit: "cover" as const, borderRadius: 4 }} alt="" />}
+                                    {b.bildUrl && <img src={b.bildUrl} style={{ width: 36, height: 36, objectFit: "cover" as const, borderRadius: 6 }} alt="" />}
                                     <div>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: C.tx }}>{b.name}</div>
-                                        <div style={{ fontSize: 11, color: C.txD }}>{b.brauerei} · {b.biersorte || b.bierstil}</div>
+                                        <div style={{ fontSize: 11, color: C.txD }}>{b.brauerei} · {b.biersorte || b.bierstil} · {b.land}</div>
                                     </div>
                                 </div>
                             ))}
@@ -258,96 +264,84 @@ export default function NeuesBierPage() {
                     )}
                 </div>
 
-                {/* Vorschau aus DB */}
-                {bierDbId && eanResult?.bier?.bildUrl && (
-                    <div style={{ background: C.card, borderRadius: 12, padding: 14, border: `1px solid ${C.bd}`, marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
-                        <img src={eanResult.bier.bildUrl} style={{ width: 60, height: 60, objectFit: "cover" as const, borderRadius: 8 }} alt="" />
-                        <div>
+                {/* DB Info Vorschau */}
+                {bierDbId && eanResult?.bier && (
+                    <div style={{ background: C.card, borderRadius: 12, padding: 14, border: `1px solid ${C.ac}30`, marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
+                        {eanResult.bier.bildUrl && <img src={eanResult.bier.bildUrl} style={{ width: 56, height: 56, objectFit: "cover" as const, borderRadius: 8 }} alt="" />}
+                        <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 11, color: C.ac, fontWeight: 700, marginBottom: 4 }}>AUS DATENBANK</div>
                             {eanResult.bier.geruch && <div style={{ fontSize: 12, color: C.txD }}>👃 {eanResult.bier.geruch}</div>}
                             {eanResult.bier.trinktemperatur && <div style={{ fontSize: 12, color: C.txD }}>🌡️ {eanResult.bier.trinktemperatur}</div>}
                             {eanResult.bier.glastyp && <div style={{ fontSize: 12, color: C.txD }}>🥂 {eanResult.bier.glastyp}</div>}
+                            {eanResult.bier.foodPairing && <div style={{ fontSize: 12, color: C.txD }}>🍽️ {eanResult.bier.foodPairing}</div>}
                         </div>
                     </div>
                 )}
 
                 {/* Brauerei */}
-                <Input label="Brauerei" placeholder="z.B. Augustiner München" value={brauerei} onChange={(e: any) => setBrauerei(e.target.value)} />
+                <div style={{ marginBottom: 14 }}>
+                    <SL>Brauerei</SL>
+                    <input type="text" placeholder="z.B. Augustiner München" value={brauerei} onChange={e => setBrauerei(e.target.value)}
+                           style={{ width: "100%", padding: "11px 14px", background: C.input, border: `1px solid ${C.bd}`, borderRadius: 10, color: C.tx, fontSize: 14, outline: "none", boxSizing: "border-box" as const }} />
+                </div>
 
                 {/* Biersorte */}
                 <SL>Biersorte</SL>
-                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 6 }}>
+                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {BEER_TYPES.map(s => <Chip key={s} label={s} active={sorte === s} onClick={() => setSorte(sorte === s ? "" : s)} />)}
                 </div>
 
                 {/* Sterne */}
                 <SL>Gesamtbewertung *</SL>
-                <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                <div style={{ display: "flex", gap: 4 }}>
                     {[1,2,3,4,5].map(s => (
-                        <span key={s}
-                              onClick={() => setSterne(s)}
-                              onMouseEnter={() => setHovSterne(s)}
-                              onMouseLeave={() => setHovSterne(0)}
-                              style={{ fontSize: 36, color: (hovSterne || sterne) >= s ? C.ac : C.bd, cursor: "pointer", transition: "all .15s", userSelect: "none" as const }}>★</span>
+                        <span key={s} onClick={() => setSterne(s)} onMouseEnter={() => setHovSterne(s)} onMouseLeave={() => setHovSterne(0)}
+                              style={{ fontSize: 38, color: (hovSterne || sterne) >= s ? C.ac : C.bd, cursor: "pointer", userSelect: "none" as const, transition: "all .15s" }}>★</span>
                     ))}
                 </div>
 
-                {/* Geschmacksprofil */}
                 <SL>Geschmacksprofil</SL>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {GESCHMACK.map(g => <Chip key={g} label={g} active={geschmack.includes(g)} onClick={() => toggle(geschmack, setGeschmack, g)} />)}
                 </div>
 
-                {/* Mundgefühl */}
                 <SL>Mundgefühl</SL>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {MUND.map(m => <Chip key={m} label={m} active={mund === m} onClick={() => setMund(mund === m ? "" : m)} />)}
                 </div>
 
-                {/* Kohlensäure */}
                 <SL>Kohlensäure</SL>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {CO2.map(k => <Chip key={k} label={k} active={co2 === k} onClick={() => setCo2(co2 === k ? "" : k)} />)}
                 </div>
 
-                {/* Farbe */}
                 <SL>Farbe / Optik</SL>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {FARBEN.map(f => <Chip key={f} label={f} active={farbe === f} onClick={() => setFarbe(farbe === f ? "" : f)} />)}
                 </div>
 
-                {/* Preis-Leistung */}
                 <SL>Preis-Leistung</SL>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                     {PREIS.map(p => <Chip key={p} label={p} active={preis === p} onClick={() => setPreis(preis === p ? "" : p)} />)}
                 </div>
 
-                {/* Nochmal kaufen */}
                 <SL>Nochmal kaufen?</SL>
                 <div style={{ display: "flex", gap: 8 }}>
                     {NOCHMAL.map(n => <Chip key={n.v} label={n.l} active={nochmal === n.v} onClick={() => setNochmal(nochmal === n.v ? "" : n.v)} />)}
                 </div>
 
-                {/* Notizen */}
                 <div style={{ marginTop: 20, marginBottom: 14 }}>
                     <SL>Notizen</SL>
-                    <textarea
-                        placeholder="Geschmack, Besonderheiten, Erinnerungen…"
-                        value={notizen}
-                        onChange={e => setNotizen(e.target.value)}
-                        rows={3}
-                        style={{ width: "100%", padding: "11px 14px", background: C.input, border: `1px solid ${C.bd}`, borderRadius: 10, color: C.tx, fontSize: 14, outline: "none", resize: "vertical" as const, boxSizing: "border-box" as const, fontFamily: "inherit" }}
-                    />
+                    <textarea placeholder="Geschmack, Besonderheiten, Erinnerungen…" value={notizen} onChange={e => setNotizen(e.target.value)} rows={3}
+                              style={{ width: "100%", padding: "11px 14px", background: C.input, border: `1px solid ${C.bd}`, borderRadius: 10, color: C.tx, fontSize: 14, outline: "none", resize: "vertical" as const, boxSizing: "border-box" as const, fontFamily: "inherit" }} />
                 </div>
 
-                {/* Fehler */}
                 {error && (
                     <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 14, background: "#C0392B20", border: `1px solid ${C.danger}40`, color: "#e74c3c", fontSize: 13 }}>
                         {error}
                     </div>
                 )}
 
-                {/* Speichern */}
                 <button type="submit" disabled={saving} style={{
                     width: "100%", padding: 16, marginTop: 8,
                     background: saving ? C.acDim : `linear-gradient(135deg, ${C.ac}, ${C.acDim})`,
