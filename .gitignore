@@ -15,6 +15,12 @@ build/
 .env.test.local
 .env.production.local
 
+# Passwoerter
+passwords.txt
+
+# MPW Skripte
+Skripte_mpw/
+
 # Uploads (Bilder werden lokal gespeichert, nicht in Git)
 public/uploads/
 bilder/
