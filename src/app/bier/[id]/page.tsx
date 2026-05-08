@@ -49,7 +49,7 @@ export default function BierDetailPage() {
 
     useEffect(() => {
         if (!id || status !== "authenticated") return;
-        fetch(`/api/beers/${id}`)
+        fetch(`/api/bier/${id}`)
             .then(r => r.json())
             .then(d => {
                 setBewertung(d.bewertung);
@@ -63,13 +63,13 @@ export default function BierDetailPage() {
 
     const handleProst = async () => {
         setGeprosted(p => !p);
-        await fetch(`/api/beers/${id}/prost`, { method: "POST" });
+        await fetch(`/api/bier/${id}/prost`, { method: "POST" });
     };
 
     const handleKommentar = async () => {
         if (!kommentar.trim()) return;
         setSending(true);
-        const res = await fetch(`/api/beers/${id}/kommentar`, {
+        const res = await fetch(`/api/bier/${id}/kommentar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: kommentar }),
@@ -140,7 +140,7 @@ export default function BierDetailPage() {
                             {[1,2,3,4,5].map(st => <span key={st} style={{ color: st <= b.sterne ? C.ac : C.bd }}>★</span>)}
                         </div>
 
-                        {/* Aktionen */}
+                        {/* Prost Button */}
                         <div style={{ display: "flex", gap: 10 }}>
                             <button onClick={handleProst} style={{
                                 flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${geprosted ? C.ac : C.bd}`,
@@ -171,7 +171,7 @@ export default function BierDetailPage() {
                     <InfoRow label="Preis-Leistung" value={b.preis} />
                     <InfoRow label="Nochmal kaufen" value={b.nochmal === "ja" ? "👍 Ja" : b.nochmal === "nein" ? "👎 Nein" : b.nochmal === "vielleicht" ? "🤷 Vielleicht" : ""} />
                     {b.notizen && (
-                        <div style={{ marginTop: 8, padding: "10px 12px", background: C.bgInput || C.input, borderRadius: 10, border: `1px solid ${C.bd}` }}>
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: C.input, borderRadius: 10, border: `1px solid ${C.bd}` }}>
                             <div style={{ fontSize: 11, color: C.txD, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Notizen</div>
                             <p style={{ fontSize: 13, color: C.txD, margin: 0, lineHeight: 1.6, fontStyle: "italic" }}>„{b.notizen}"</p>
                         </div>
@@ -203,26 +203,28 @@ export default function BierDetailPage() {
                     </Section>
                 )}
 
-                {/* Beschreibung aus DB */}
+                {/* Beschreibung */}
                 {db?.beschreibung && (
                     <Section title="📖 Beschreibung">
                         <p style={{ fontSize: 13, color: C.txD, lineHeight: 1.7, margin: 0 }}>{db.beschreibung}</p>
                     </Section>
                 )}
 
+                {/* Geschichte */}
                 {db?.geschichte && (
                     <Section title="🏛️ Geschichte">
                         <p style={{ fontSize: 13, color: C.txD, lineHeight: 1.7, margin: 0 }}>{db.geschichte}</p>
                     </Section>
                 )}
 
+                {/* Food Pairing (lang) */}
                 {db?.foodPairing && db.foodPairing.length > 50 && (
                     <Section title="🍽️ Food Pairing">
                         <p style={{ fontSize: 13, color: C.txD, lineHeight: 1.7, margin: 0 }}>{db.foodPairing}</p>
                     </Section>
                 )}
 
-                {/* Brauerei-Info */}
+                {/* Brauerei */}
                 {db?.brauereiAdresse && (
                     <Section title="🏭 Brauerei">
                         <InfoRow label="Name" value={db.brauerei || ""} />
@@ -244,7 +246,7 @@ export default function BierDetailPage() {
                                 <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acGlow, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
                                     {k.user?.image || "🍺"}
                                 </div>
-                                <div style={{ flex: 1, background: "#141208", borderRadius: 10, padding: "8px 12px", border: `1px solid ${C.bd}` }}>
+                                <div style={{ flex: 1, background: C.input, borderRadius: 10, padding: "8px 12px", border: `1px solid ${C.bd}` }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                                         <span style={{ fontSize: 11, fontWeight: 700, color: C.tx }}>{k.user?.name}</span>
                                         <span style={{ fontSize: 10, color: C.txM }}>{new Date(k.createdAt).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</span>
@@ -254,15 +256,13 @@ export default function BierDetailPage() {
                             </div>
                         ))}
                     </div>
-
-                    {/* Kommentar schreiben */}
                     <div style={{ display: "flex", gap: 8 }}>
                         <input
                             placeholder="Kommentar schreiben…"
                             value={kommentar}
                             onChange={e => setKommentar(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && handleKommentar()}
-                            style={{ flex: 1, padding: "10px 12px", background: "#141208", border: `1px solid ${C.bd}`, borderRadius: 20, color: C.tx, fontSize: 13, outline: "none" }}
+                            style={{ flex: 1, padding: "10px 12px", background: C.input, border: `1px solid ${C.bd}`, borderRadius: 20, color: C.tx, fontSize: 13, outline: "none" }}
                         />
                         <button onClick={handleKommentar} disabled={sending || !kommentar.trim()}
                                 style={{ padding: "10px 16px", background: C.ac, color: C.bg, border: "none", borderRadius: 20, fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: !kommentar.trim() ? 0.5 : 1 }}>
