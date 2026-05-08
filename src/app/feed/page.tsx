@@ -63,6 +63,21 @@ export default function FeedPage() {
                 ) : (
                     bewertungen.map((b: any) => (
                         <div key={b.id} style={s.card}>
+
+                            {/* Bild */}
+                            {b.bildUrls?.[0] && (
+                                <img
+                                    src={b.bildUrls[0]}
+                                    alt={b.name}
+                                    style={{
+                                        width: "100%",
+                                        height: 220,
+                                        objectFit: "cover" as const,
+                                        display: "block",
+                                    }}
+                                />
+                            )}
+
                             <div style={{ padding: 16 }}>
                                 {/* User + Zeit */}
                                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -82,7 +97,7 @@ export default function FeedPage() {
 
                                 {/* Sterne */}
                                 <div style={{ fontSize: 20, marginBottom: 8 }}>
-                                    {[1,2,3,4,5].map(s => <span key={s} style={{ color: s <= b.sterne ? "#C8963E" : "#2E2820" }}>★</span>)}
+                                    {[1,2,3,4,5].map(st => <span key={st} style={{ color: st <= b.sterne ? "#C8963E" : "#2E2820" }}>★</span>)}
                                 </div>
 
                                 {/* Tags */}
