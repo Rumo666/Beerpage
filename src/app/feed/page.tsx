@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 export default function FeedPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [bewertungen, setBewertungen] = useState([]);
+    const [bewertungen, setBewertungen] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [geprosted, setGeprosted] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (status === "unauthenticated") router.push("/login");
@@ -17,10 +18,25 @@ export default function FeedPage() {
         if (status === "authenticated") {
             fetch("/api/beers")
                 .then((r) => r.json())
-                .then((d) => { setBewertungen(d.bewertungen || []); setLoading(false); })
+                .then((d) => {
+                    setBewertungen(d.bewertungen || []);
+                    // Prost-Status initialisieren
+                    const prostMap: Record<string, boolean> = {};
+                    (d.bewertungen || []).forEach((b: any) => {
+                        prostMap[b.id] = b.prost?.length > 0;
+                    });
+                    setGeprosted(prostMap);
+                    setLoading(false);
+                })
                 .catch(() => setLoading(false));
         }
     }, [status]);
+
+    const handleProst = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setGeprosted(prev => ({ ...prev, [id]: !prev[id] }));
+        await fetch(`/api/beers/${id}/prost`, { method: "POST" });
+    };
 
     if (status === "loading" || loading) return (
         <div style={{ minHeight: "100vh", background: "#0E0C07", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -35,7 +51,7 @@ export default function FeedPage() {
         nav: { position: "fixed" as const, bottom: 0, left: 0, right: 0, background: "#1A1710", borderTop: "1px solid #2E2820", display: "flex", justifyContent: "space-around", padding: "8px 0 16px" },
         navBtn: { background: "none", border: "none", color: "#5A5040", cursor: "pointer", display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 2, fontSize: 10, padding: "4px 12px" },
         fab: { position: "fixed" as const, bottom: 72, right: 20, width: 54, height: 54, borderRadius: "50%", background: "linear-gradient(135deg, #C8963E, #8B6A2F)", border: "none", color: "#0E0C07", fontSize: 24, cursor: "pointer", boxShadow: "0 4px 20px rgba(200,150,62,0.4)", display: "flex", alignItems: "center", justifyContent: "center" },
-        card: { background: "#1A1710", borderRadius: 14, border: "1px solid #2E2820", margin: "0 16px 12px", overflow: "hidden" },
+        card: { background: "#1A1710", borderRadius: 14, border: "1px solid #2E2820", margin: "0 16px 12px", overflow: "hidden", cursor: "pointer" as const, transition: "border-color .2s" },
         empty: { textAlign: "center" as const, padding: "60px 20px", color: "#5A5040" },
     };
 
@@ -62,7 +78,13 @@ export default function FeedPage() {
                     </div>
                 ) : (
                     bewertungen.map((b: any) => (
-                        <div key={b.id} style={s.card}>
+                        <div
+                            key={b.id}
+                            style={s.card}
+                            onClick={() => router.push(`/bier/${b.id}`)}
+                            onMouseEnter={e => (e.currentTarget.style.borderColor = "#8B6A2F")}
+                            onMouseLeave={e => (e.currentTarget.style.borderColor = "#2E2820")}
+                        >
                             <div style={{ padding: 14 }}>
 
                                 {/* User + Zeit + Sorte */}
@@ -119,12 +141,24 @@ export default function FeedPage() {
                                 </div>
                             </div>
 
-                            {/* Aktionen */}
+                            {/* Aktionen – stopPropagation damit Klick nicht zur Detailseite geht */}
                             <div style={{ display: "flex", borderTop: "1px solid #2E2820" }}>
-                                <button style={{ flex: 1, padding: "10px", background: "none", border: "none", borderRight: "1px solid #2E2820", color: "#8A7D66", cursor: "pointer", fontSize: 13 }}>
-                                    🍻 {b._count?.prost || 0} Prost!
+                                <button
+                                    onClick={(e) => handleProst(e, b.id)}
+                                    style={{
+                                        flex: 1, padding: "10px", background: "none", border: "none",
+                                        borderRight: "1px solid #2E2820",
+                                        color: geprosted[b.id] ? "#C8963E" : "#8A7D66",
+                                        cursor: "pointer", fontSize: 13, fontWeight: geprosted[b.id] ? 700 : 400,
+                                        transition: "color .2s",
+                                    }}
+                                >
+                                    🍻 {(b._count?.prost || 0) + (geprosted[b.id] ? 1 : 0)} Prost!
                                 </button>
-                                <button style={{ flex: 1, padding: "10px", background: "none", border: "none", color: "#8A7D66", cursor: "pointer", fontSize: 13 }}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); router.push(`/bier/${b.id}#kommentare`); }}
+                                    style={{ flex: 1, padding: "10px", background: "none", border: "none", color: "#8A7D66", cursor: "pointer", fontSize: 13 }}
+                                >
                                     💬 {b._count?.kommentare || 0}
                                 </button>
                             </div>
