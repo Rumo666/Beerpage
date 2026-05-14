@@ -12,18 +12,12 @@ export async function GET(req: Request) {
         select: {
             id: true, name: true, email: true, image: true,
             rolle: true, createdAt: true, benachrichtigungen: true,
-<<<<<<< HEAD
             gesperrt: true,
         },
     });
 
     if (!user) return NextResponse.json({ error: "User nicht gefunden" }, { status: 404 });
 
-=======
-        },
-    });
-
->>>>>>> 37074af8a786136968586c1ddd434f9e74292b61
     const bewertungen = await prisma.bewertung.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
@@ -33,10 +27,6 @@ export async function GET(req: Request) {
         },
     });
 
-<<<<<<< HEAD
-=======
-    // Statistiken
->>>>>>> 37074af8a786136968586c1ddd434f9e74292b61
     const [prostCount, kommentarCount] = await Promise.all([
         prisma.prost.count({ where: { userId: session.user.id } }),
         prisma.kommentar.count({ where: { userId: session.user.id } }),
@@ -46,18 +36,10 @@ export async function GET(req: Request) {
         ? bewertungen.reduce((s, b) => s + b.sterne, 0) / bewertungen.length
         : null;
 
-<<<<<<< HEAD
-=======
-    // Lieblingssorte
->>>>>>> 37074af8a786136968586c1ddd434f9e74292b61
     const sortenCount: Record<string, number> = {};
     bewertungen.forEach(b => { if (b.sorte) sortenCount[b.sorte] = (sortenCount[b.sorte] || 0) + 1; });
     const lieblingsSorte = Object.entries(sortenCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
-<<<<<<< HEAD
-=======
-    // Länder (aus DB)
->>>>>>> 37074af8a786136968586c1ddd434f9e74292b61
     const dbBiere = await prisma.bierDatenbank.findMany({
         where: { bewertungen: { some: { userId: session.user.id } } },
         select: { land: true },
@@ -96,14 +78,10 @@ export async function PATCH(req: Request) {
     const user = await prisma.user.update({
         where: { id: session.user.id },
         data: updateData,
-<<<<<<< HEAD
         select: {
             id: true, name: true, email: true, image: true,
             rolle: true, benachrichtigungen: true,
         },
-=======
-        select: { id: true, name: true, email: true, image: true, rolle: true, benachrichtigungen: true },
->>>>>>> 37074af8a786136968586c1ddd434f9e74292b61
     });
 
     return NextResponse.json({ user });
