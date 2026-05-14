@@ -13,7 +13,7 @@ export default function FeedPage() {
     const [geprosted, setGeprosted] = useState<Record<string, boolean>>({});
     const [showFilter, setShowFilter] = useState(false);
     const [filterSorte, setFilterSorte] = useState("Alle");
-    const [filterSterne, setFilterSterne] = useState(0);
+    const [filterSterne, setFilterSterne] = useState<number[]>([]); // Multi-Select
     const [filterUser, setFilterUser] = useState("Alle");
     const [users, setUsers] = useState<any[]>([]);
 
@@ -31,7 +31,6 @@ export default function FeedPage() {
                     const prostMap: Record<string, boolean> = {};
                     bws.forEach((b: any) => { prostMap[b.id] = b.prost?.length > 0; });
                     setGeprosted(prostMap);
-                    // Unique users für Filter
                     const uniqueUsers = Array.from(new Map(bws.map((b: any) => [b.user?.id, b.user])).values());
                     setUsers(uniqueUsers);
                     setLoading(false);
@@ -46,15 +45,21 @@ export default function FeedPage() {
         await fetch(`/api/bier/${id}/prost`, { method: "POST" });
     };
 
+    const toggleSterne = (s: number) => {
+        setFilterSterne(prev =>
+            prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+        );
+    };
+
     // Gefilterte Bewertungen
     const filtered = bewertungen.filter(b => {
         if (filterSorte !== "Alle" && b.sorte !== filterSorte) return false;
-        if (filterSterne > 0 && b.sterne < filterSterne) return false;
+        if (filterSterne.length > 0 && !filterSterne.includes(b.sterne)) return false;
         if (filterUser !== "Alle" && b.user?.id !== filterUser) return false;
         return true;
     });
 
-    const activeFilters = (filterSorte !== "Alle" ? 1 : 0) + (filterSterne > 0 ? 1 : 0) + (filterUser !== "Alle" ? 1 : 0);
+    const activeFilters = (filterSorte !== "Alle" ? 1 : 0) + (filterSterne.length > 0 ? 1 : 0) + (filterUser !== "Alle" ? 1 : 0);
 
     if (status === "loading" || loading) return (
         <div style={{ minHeight: "100vh", background: "#0E0C07", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -106,17 +111,27 @@ export default function FeedPage() {
                                 ))}
                             </div>
                         </div>
-                        {/* Sterne */}
+
+                        {/* Sterne – Multi-Select, genau diese Sterne */}
                         <div>
-                            <div style={{ fontSize: 10, color: "#5A5040", textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 5 }}>Mindest-Sterne</div>
+                            <div style={{ fontSize: 10, color: "#5A5040", textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 5 }}>
+                                Sterne {filterSterne.length > 0 && <span style={{ color: "#C8963E" }}>({filterSterne.sort().join(", ")}★ ausgewählt)</span>}
+                            </div>
                             <div style={{ display: "flex", gap: 5 }}>
-                                {[0,1,2,3,4,5].map(n => (
-                                    <button key={n} onClick={() => setFilterSterne(n)} style={{ padding: "4px 10px", borderRadius: 14, border: `1px solid ${filterSterne === n ? "#C8963E" : "#2E2820"}`, background: filterSterne === n ? "rgba(200,150,62,0.12)" : "transparent", color: filterSterne === n ? "#C8963E" : "#8A7D66", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-                                        {n === 0 ? "Alle" : `${n}★+`}
+                                {[1,2,3,4,5].map(n => (
+                                    <button key={n} onClick={() => toggleSterne(n)} style={{
+                                        padding: "5px 12px", borderRadius: 14,
+                                        border: `1px solid ${filterSterne.includes(n) ? "#C8963E" : "#2E2820"}`,
+                                        background: filterSterne.includes(n) ? "rgba(200,150,62,0.12)" : "transparent",
+                                        color: filterSterne.includes(n) ? "#C8963E" : "#8A7D66",
+                                        cursor: "pointer", fontSize: 13, fontWeight: 700,
+                                    }}>
+                                        {"★".repeat(n)}
                                     </button>
                                 ))}
                             </div>
                         </div>
+
                         {/* User */}
                         {users.length > 1 && (
                             <div>
@@ -129,9 +144,10 @@ export default function FeedPage() {
                                 </div>
                             </div>
                         )}
+
                         {/* Reset */}
                         {activeFilters > 0 && (
-                            <button onClick={() => { setFilterSorte("Alle"); setFilterSterne(0); setFilterUser("Alle"); }} style={{ alignSelf: "flex-start" as const, padding: "4px 12px", borderRadius: 8, border: "1px solid #C0392B30", background: "transparent", color: "#C0392B", cursor: "pointer", fontSize: 11 }}>
+                            <button onClick={() => { setFilterSorte("Alle"); setFilterSterne([]); setFilterUser("Alle"); }} style={{ alignSelf: "flex-start" as const, padding: "4px 12px", borderRadius: 8, border: "1px solid rgba(192,57,43,0.3)", background: "transparent", color: "#C0392B", cursor: "pointer", fontSize: 11 }}>
                                 Filter zurücksetzen
                             </button>
                         )}
@@ -144,8 +160,8 @@ export default function FeedPage() {
                 {filtered.length === 0 ? (
                     <div style={s.empty}>
                         <div style={{ fontSize: 64, marginBottom: 16 }}>🍺</div>
-                        <p style={{ fontSize: 16, marginBottom: 8 }}>{bewertungen.length === 0 ? "Noch keine Bewertungen" : "Keine Treffer für diesen Filter"}</p>
-                        <p style={{ fontSize: 13 }}>{bewertungen.length === 0 ? "Sei der Erste!" : "Filter anpassen oder zurücksetzen"}</p>
+                        <p style={{ fontSize: 16, marginBottom: 8 }}>{bewertungen.length === 0 ? "Noch keine Bewertungen" : "Keine Treffer"}</p>
+                        <p style={{ fontSize: 13 }}>{bewertungen.length === 0 ? "Sei der Erste!" : "Filter anpassen"}</p>
                     </div>
                 ) : (
                     filtered.map((b: any) => (
