@@ -240,16 +240,25 @@ export default function ProfilPage() {
                         <h3 style={{ fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, color: C.ac, margin: "0 0 12px", textTransform: "uppercase" as const, letterSpacing: 1 }}>📊 Statistiken</h3>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                             {[
-                                ["🍺", stats.anzahlBewertungen, "Bewertungen"],
-                                ["⭐", stats.avgSterne ? stats.avgSterne.toFixed(1) : "–", "Ø Sterne"],
-                                ["🍻", stats.prostGegeben, "Prost!"],
-                                ["💬", stats.kommentare, "Kommentare"],
-                                ["🥇", stats.lieblingsSorte || "–", "Top Sorte"],
-                                ["🌍", stats.laender, "Länder"],
-                            ].map(([icon, val, label]) => (
-                                <div key={label as string} style={{ textAlign: "center" as const, background: C.input, borderRadius: 10, padding: "12px 8px", border: `1px solid ${C.bd}` }}>
+                                ["🍺", stats.anzahlBewertungen, "Bewertungen", "/feed?user=me"],
+                                ["⭐", stats.avgSterne ? stats.avgSterne.toFixed(1) : "–", "Ø Sterne", null],
+                                ["🍻", stats.prostGegeben, "Prost!", "/profil/prost"],
+                                ["💬", stats.kommentare, "Kommentare", "/profil/kommentare"],
+                                ["🥇", stats.lieblingsSorte || "–", "Top Sorte", stats.lieblingsSorte ? `/katalog?sorte=${encodeURIComponent(stats.lieblingsSorte || "")}` : null],
+                                ["🌍", stats.laender, "Länder", "/weltkarte"],
+                            ].map(([icon, val, label, link]) => (
+                                <div key={label as string}
+                                     onClick={() => link && router.push(link as string)}
+                                     style={{
+                                         textAlign: "center" as const, background: C.input, borderRadius: 10,
+                                         padding: "12px 8px", border: `1px solid ${C.bd}`,
+                                         cursor: link ? "pointer" : "default",
+                                         transition: "border-color .2s",
+                                     }}
+                                     onMouseEnter={e => { if (link) e.currentTarget.style.borderColor = C.ac; }}
+                                     onMouseLeave={e => { if (link) e.currentTarget.style.borderColor = C.bd; }}>
                                     <div style={{ fontSize: 18, marginBottom: 2 }}>{icon}</div>
-                                    <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 800, color: C.ac }}>{val}</div>
+                                    <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 800, color: link ? C.ac : C.tx }}>{val}</div>
                                     <div style={{ fontSize: 10, color: C.txM }}>{label}</div>
                                 </div>
                             ))}
